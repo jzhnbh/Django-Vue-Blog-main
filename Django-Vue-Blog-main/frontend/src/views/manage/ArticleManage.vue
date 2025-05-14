@@ -76,7 +76,7 @@
 
       <!-- 编辑器 -->
       <quill-editor
-        v-model:content="editorContent"
+        v-model="editorContent"
         :options="editorOptions"
         contentType="html"
         @update:content="handleContentUpdate"
@@ -103,18 +103,18 @@
         <div class="preview-sidebar">
           <h3>目录</h3>
           <div class="toc">
-            <template v-for="(heading, index) in headings" :key="index">
-              <div 
-                :class="[
-                  'toc-item', 
-                  `level-${heading.level}`,
-                  { active: currentHeading === heading.id }
-                ]"
-                @click="scrollToHeading(heading.id)"
-              >
-                {{ heading.text }}
-              </div>
-            </template>
+            <div 
+              v-for="(heading, index) in headings"
+              :key="index"
+              :class="[
+                'toc-item', 
+                `level-${heading.level}`,
+                { active: currentHeading === heading.id }
+              ]"
+              @click="scrollToHeading(heading.id)"
+            >
+              {{ heading.text }}
+            </div>
           </div>
         </div>
         <div class="preview-content">
@@ -139,277 +139,309 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+<script lang="ts">
+import { ref, reactive, computed, onMounted, defineComponent } from 'vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import { ElMessage } from 'element-plus'
-import api from '@/api'
+import api from '../../api'
 import { Plus } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
 
-interface ArticleForm {
-  title: string;
-  summary: string;
-  category_id: number | null;
-  coverimage: number | null;
-  body: string;
-}
+export default defineComponent({
+  name: 'ArticleManage',
+  components: {
+    QuillEditor,
+    Plus
+  },
+  setup() {
+    interface ArticleForm {
+      title: string;
+      summary: string;
+      category_id: number | null;
+      coverimage: number | null;
+      body: string;
+    }
 
-interface Heading {
-  id: string;
-  text: string;
-  level: number;
-}
+    interface Heading {
+      id: string;
+      text: string;
+      level: number;
+    }
 
-interface EditorOptions {
-  modules: {
-    toolbar: any[];
-  };
-}
+    interface EditorOptions {
+      modules: {
+        toolbar: any[];
+      };
+    }
 
-// 标签选项
-const tags = [
-  { label: '论文', value: 1 },
-  { label: '手账', value: 2 },
-  { label: '技术', value: 3 },
-  { label: '花园', value: 4 },
-]
-
-// 响应式状态
-const editorContent = ref<string>('')
-const articleForm = reactive<ArticleForm>({
-  title: '',
-  summary: '',
-  category_id: null,
-  coverimage: null,
-  body: ''
-})
-const headings = ref<Heading[]>([])
-const currentHeading = ref<string>('')
-const previewUrl = ref<string>('')
-
-// 判断是否为论文分类
-const isPaperCategory = computed(() => articleForm.category_id === 1)
-
-// 分类改变处理
-const handleCategoryChange = (value: number | null): void => {
-  if (value !== 1) {
-    articleForm.coverimage = null // 如果分类不是论文，清空封面
-  }
-}
-
-// 编辑器配置
-const editorOptions: EditorOptions = {
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': [1, 2, 3, false] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      ['clean']
+    // 标签选项
+    const tags = [
+      { label: '论文', value: 1 },
+      { label: '手账', value: 2 },
+      { label: '技术', value: 3 },
+      { label: '花园', value: 4 },
     ]
-  }
-}
 
-// 提取标题
-const extractHeadings = (html: string): Heading[] => {
-  const div = document.createElement('div')
-  div.innerHTML = html
-  const headingElements = div.querySelectorAll('h1, h2, h3')
-  
-  return Array.from(headingElements).map((el, index) => {
-    const id = `heading-${index}`
-    el.id = id // 添加 ID 以支持锚点跳转
-    return {
-      id,
-      text: el.textContent || '',
-      level: parseInt(el.tagName[1])
-    }
-  })
-}
+    // 响应式状态
+    const editorContent = ref<string>('')
+    const articleForm = reactive<ArticleForm>({
+      title: '',
+      summary: '',
+      category_id: null,
+      coverimage: null,
+      body: ''
+    })
+    const headings = ref<Heading[]>([])
+    const currentHeading = ref<string>('')
+    const previewUrl = ref<string>('')
 
-// 内容更新处理
-const handleContentUpdate = (content: string): void => {
-  headings.value = extractHeadings(content)
-}
+    // 判断是否为论文分类
+    const isPaperCategory = computed(() => articleForm.category_id === 1)
 
-// 滚动到指定标题
-const scrollToHeading = (id: string): void => {
-  const element = document.getElementById(id)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth' })
-    currentHeading.value = id
-  }
-}
-
-const fileInput = ref<HTMLInputElement | null>(null)
-
-const handleUploadClick = () => {
-  fileInput.value?.click()
-}
-
-const handleFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (!target.files?.length) return
-
-  const file = target.files[0]
-  const formData = new FormData()
-  formData.append('content', file)
-
-  try {
-    const response = await api.post('/coverimage/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+    // 分类改变处理
+    const handleCategoryChange = (value: number | null): void => {
+      if (value !== 1) {
+        articleForm.coverimage = null // 如果分类不是论文，清空封面
       }
-    })
-    // 更新 coverimage_id
-    articleForm.coverimage = response.data.id
-    previewUrl.value = URL.createObjectURL(file)
-  } catch (error) {
-    console.error('上传封面失败:', error)
-    ElMessage.error('上传封面失败')
-  }
-}
-
-// 发布文章
-const publishArticle = async (): Promise<void> => {
-  if (!articleForm.title || !articleForm.summary || !editorContent.value || !articleForm.category_id) {
-    ElMessage.warning('请填写完整的文章信息')
-    return
-  }
-
-  if (isPaperCategory.value && !articleForm.coverimage) {
-    ElMessage.warning('论文分类必须上传封面')
-    return
-  }
-
-  const data = {
-    title: articleForm.title,
-    summary: articleForm.summary,
-    body: editorContent.value,
-    category_id: articleForm.category_id,
-    coverimage_id: articleForm.coverimage,
-    toc: headings.value,
-    published: true
-  }
-
-  const id = route.query.id
-  try {
-    let response
-    
-    if (id) {
-      response = await api.put(`/article/${id}/`, data)
-      ElMessage.success('文章更新成功')
-    } else {
-      response = await api.post('/article/', data)
-      ElMessage.success('文章发布成功')
     }
 
-    // 清空表单
-    articleForm.title = ''
-    articleForm.summary = ''
-    articleForm.category_id = null
-    articleForm.coverimage = null
-    editorContent.value = ''
-    headings.value = []
-    previewUrl.value = ''
-    
-  } catch (error) {
-    console.error('操作失败:', error)
-    ElMessage.error(id ? '文章更新失败' : '文章发布失败')
-  }
-}
+    // 编辑器配置
+    const editorOptions: EditorOptions = {
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline', 'strike'],
+          ['blockquote', 'code-block'],
+          [{ 'header': [1, 2, 3, false] }],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ 'script': 'sub'}, { 'script': 'super' }],
+          [{ 'indent': '-1'}, { 'indent': '+1' }],
+          [{ 'direction': 'rtl' }],
+          [{ 'size': ['small', false, 'large', 'huge'] }],
+          [{ 'color': [] }, { 'background': [] }],
+          [{ 'font': [] }],
+          ['clean']
+        ]
+      }
+    }
 
-// 保存文章
-const saveArticle = async (): Promise<void> => {
-  const data = {
-    title: articleForm.title,
-    summary: articleForm.summary,
-    body: editorContent.value,
-    category_id: articleForm.category_id,
-    coverimage_id: articleForm.coverimage,
-    toc: headings.value, // 添加目录字段
-    punished: false,  // 保存时传递 punished: false
-  }
+    // 提取标题
+    const extractHeadings = (html: string): Heading[] => {
+      const div = document.createElement('div')
+      div.innerHTML = html
+      const headingElements = div.querySelectorAll('h1, h2, h3')
+      
+      return Array.from(headingElements).map((el, index) => {
+        const id = `heading-${index}`
+        el.id = id // 添加 ID 以支持锚点跳转
+        return {
+          id,
+          text: el.textContent || '',
+          level: parseInt(el.tagName[1])
+        }
+      })
+    }
 
-  try {
-    // TODO: 调用API保存文章
-    const response = await api.post('/article/save/', data)
+    // 内容更新处理
+    const handleContentUpdate = (content: string): void => {
+      headings.value = extractHeadings(content)
+    }
 
-    if (response.status === 200) {
-      ElMessage.success('文章保存成功')
-      // 清空表单
-      articleForm.title = ''
-      articleForm.summary = ''
-      articleForm.category_id = null
+    // 滚动到指定标题
+    const scrollToHeading = (id: string): void => {
+      const element = document.getElementById(id)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+        currentHeading.value = id
+      }
+    }
+
+    const fileInput = ref<HTMLInputElement | null>(null)
+
+    const handleUploadClick = () => {
+      fileInput.value?.click()
+    }
+
+    const handleFileChange = async (event: Event) => {
+      const target = event.target as HTMLInputElement
+      if (!target.files?.length) return
+
+      const file = target.files[0]
+      const formData = new FormData()
+      formData.append('content', file)
+
+      try {
+        const response = await api.post('/coverimage/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        // 更新 coverimage_id
+        articleForm.coverimage = response.data.id
+        previewUrl.value = URL.createObjectURL(file)
+      } catch (error) {
+        console.error('上传封面失败:', error)
+        ElMessage.error('上传封面失败')
+      }
+    }
+
+    // 发布文章
+    const publishArticle = async (): Promise<void> => {
+      if (!articleForm.title || !articleForm.summary || !editorContent.value || !articleForm.category_id) {
+        ElMessage.warning('请填写完整的文章信息')
+        return
+      }
+
+      if (isPaperCategory.value && !articleForm.coverimage) {
+        ElMessage.warning('论文分类必须上传封面')
+        return
+      }
+
+      const data = {
+        title: articleForm.title,
+        summary: articleForm.summary,
+        body: editorContent.value,
+        category_id: articleForm.category_id,
+        coverimage_id: articleForm.coverimage,
+        toc: headings.value,
+        published: true
+      }
+
+      const id = route.query.id
+      try {
+        let response
+        
+        if (id) {
+          response = await api.put(`/article/${id}/`, data)
+          ElMessage.success('文章更新成功')
+        } else {
+          response = await api.post('/article/', data)
+          ElMessage.success('文章发布成功')
+        }
+
+        // 清空表单
+        articleForm.title = ''
+        articleForm.summary = ''
+        articleForm.category_id = null
+        articleForm.coverimage = null
+        editorContent.value = ''
+        headings.value = []
+        previewUrl.value = ''
+        
+      } catch (error) {
+        console.error('操作失败:', error)
+        ElMessage.error(id ? '文章更新失败' : '文章发布失败')
+      }
+    }
+
+    // 保存文章
+    const saveArticle = async (): Promise<void> => {
+      const data = {
+        title: articleForm.title,
+        summary: articleForm.summary,
+        body: editorContent.value,
+        category_id: articleForm.category_id,
+        coverimage_id: articleForm.coverimage,
+        toc: headings.value, // 添加目录字段
+        punished: false,  // 保存时传递 punished: false
+      }
+
+      try {
+        // TODO: 调用API保存文章
+        const response = await api.post('/article/save/', data)
+
+        if (response.status === 200) {
+          ElMessage.success('文章保存成功')
+          // 清空表单
+          articleForm.title = ''
+          articleForm.summary = ''
+          articleForm.category_id = null
+          articleForm.coverimage = null
+          editorContent.value = ''
+          headings.value = [] // 清空目录
+        }
+      } catch (error) {
+        ElMessage.error('文章保存失败')
+      }
+    }
+
+    const route = useRoute()
+    const isEditMode = computed(() => route.query.id !== undefined)
+
+    // 获取文章数据
+    const fetchArticle = async () => {
+      if (!route.query.id) return
+      
+      try {
+        const response = await api.get(`/article/${route.query.id}/`)
+        const article = response.data
+        
+        articleForm.title = article.title
+        articleForm.summary = article.summary
+        articleForm.category_id = article.category_id
+        articleForm.body = article.body
+        editorContent.value = article.body
+        
+        // 获取封面图片
+        if (article.coverimage_id) {
+          articleForm.coverimage = article.coverimage_id
+          const coverResponse = await api.get(`/coverimage/${article.coverimage_id}/`)
+          previewUrl.value = coverResponse.data.content
+        }
+      } catch (error) {
+        console.error('获取文章失败:', error)
+        ElMessage.error('获取文章失败')
+      }
+    }
+
+    // 删除封面
+    const handleDeleteCover = () => {
       articleForm.coverimage = null
-      editorContent.value = ''
-      headings.value = [] // 清空目录
+      previewUrl.value = ''
     }
-  } catch (error) {
-    ElMessage.error('文章保存失败')
-  }
-}
 
-const route = useRoute()
-const isEditMode = computed(() => route.query.id !== undefined)
-
-// 获取文章数据
-const fetchArticle = async () => {
-  if (!route.query.id) return
-  
-  try {
-    const response = await api.get(`/article/${route.query.id}/`)
-    const article = response.data
-    
-    articleForm.title = article.title
-    articleForm.summary = article.summary
-    articleForm.category_id = article.category_id
-    articleForm.body = article.body
-    editorContent.value = article.body
-    
-    // 获取封面图片
-    if (article.coverimage_id) {
-      articleForm.coverimage = article.coverimage_id
-      const coverResponse = await api.get(`/coverimage/${article.coverimage_id}/`)
-      previewUrl.value = coverResponse.data.content
+    // 更新文章时确保使用最新的 coverimage_id
+    const updateArticle = async () => {
+      try {
+        await api.put(`/article/${route.query.id}/`, {
+          ...articleForm,
+          body: editorContent.value
+        })
+        ElMessage.success('更新成功')
+      } catch (error) {
+        console.error('更新失败:', error)
+        ElMessage.error('更新失败')
+      }
     }
-  } catch (error) {
-    console.error('获取文章失败:', error)
-    ElMessage.error('获取文章失败')
-  }
-}
 
-// 删除封面
-const handleDeleteCover = () => {
-  articleForm.coverimage = null
-  previewUrl.value = ''
-}
-
-// 更新文章时确保使用最新的 coverimage_id
-const updateArticle = async () => {
-  try {
-    await api.put(`/article/${route.query.id}/`, {
-      ...articleForm,
-      body: editorContent.value
+    // 在组件挂载时获取文章数据
+    onMounted(() => {
+      fetchArticle()
     })
-    ElMessage.success('更新成功')
-  } catch (error) {
-    console.error('更新失败:', error)
-    ElMessage.error('更新失败')
-  }
-}
 
-// 在组件挂载时获取文章数据
-onMounted(() => {
-  fetchArticle()
+    return {
+      tags,
+      editorContent,
+      articleForm,
+      headings,
+      currentHeading,
+      previewUrl,
+      isPaperCategory,
+      handleCategoryChange,
+      editorOptions,
+      handleContentUpdate,
+      scrollToHeading,
+      handleUploadClick,
+      handleFileChange,
+      publishArticle,
+      saveArticle,
+      route,
+      isEditMode,
+      fetchArticle,
+      handleDeleteCover,
+      updateArticle
+    }
+  }
 })
 </script>
 

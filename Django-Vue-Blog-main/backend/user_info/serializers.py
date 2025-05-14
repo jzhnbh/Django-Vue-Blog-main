@@ -22,7 +22,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['url', 'id', 'username', 'password', 'is_superuser']
-        extra_kwargs = {'password': {'write_only': True}, 'is_superuser': {'read_only': True}}
+        extra_kwargs = {'password': {'write_only': True}}
     
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -46,7 +46,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'email',
             'last_login',
             'date_joined',
-            'avatar'
+            'avatar',
+            'is_superuser'
         ]
 
 class AuthInfoSerializer(serializers.ModelSerializer):

@@ -80,11 +80,11 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
+<script lang="ts">
+import { ref, onMounted, defineComponent } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Star, View, ChatLineRound } from '@element-plus/icons-vue'
-import api from '@/api'
+import api from '../../api'
 
 interface Article {
   id: number
@@ -104,63 +104,83 @@ interface Comment {
   }
 }
 
-const articles = ref<Article[]>([])
-const comments = ref<Comment[]>([])
-const dialogVisible = ref(false)
-const currentArticle = ref<Article | null>(null)
+export default defineComponent({
+  name: 'CommentManage',
+  components: {
+    Star,
+    View,
+    ChatLineRound
+  },
+  setup() {
+    const articles = ref<Article[]>([])
+    const comments = ref<Comment[]>([])
+    const dialogVisible = ref(false)
+    const currentArticle = ref<Article | null>(null)
 
-// 获取文章列表及统计数据
-const fetchArticles = async () => {
-  try {
-    const response = await api.get('/article/stats/')
-    articles.value = response.data
-  } catch (error) {
-    console.error('获取文章统计数据失败:', error)
-    ElMessage.error('获取数据失败')
-  }
-}
-
-// 获取文章评论
-const showComments = async (article: Article) => {
-  currentArticle.value = article
-  try {
-    const response = await api.get(`/article/${article.id}/comments/`)
-    comments.value = response.data
-    dialogVisible.value = true
-  } catch (error) {
-    console.error('获取评论失败:', error)
-    ElMessage.error('获取评论失败')
-  }
-}
-
-// 删除评论
-const deleteComment = async (commentId: number) => {
-  try {
-    await api.delete(`/comment/${commentId}/`)
-    ElMessage.success('删除成功')
-    if (currentArticle.value) {
-      showComments(currentArticle.value) // 刷新评论列表
+    // 获取文章列表及统计数据
+    const fetchArticles = async () => {
+      try {
+        const response = await api.get('/article/stats/')
+        articles.value = response.data
+      } catch (error) {
+        console.error('获取文章统计数据失败:', error)
+        ElMessage.error('获取数据失败')
+      }
     }
-  } catch (error) {
-    console.error('删除评论失败:', error)
-    ElMessage.error('删除失败')
+
+    // 获取文章评论
+    const showComments = async (article: Article) => {
+      currentArticle.value = article
+      try {
+        const response = await api.get(`/article/${article.id}/comments/`)
+        comments.value = response.data
+        dialogVisible.value = true
+      } catch (error) {
+        console.error('获取评论失败:', error)
+        ElMessage.error('获取评论失败')
+      }
+    }
+
+    // 删除评论
+    const deleteComment = async (commentId: number) => {
+      try {
+        await api.delete(`/comment/${commentId}/`)
+        ElMessage.success('删除成功')
+        if (currentArticle.value) {
+          showComments(currentArticle.value) // 刷新评论列表
+        }
+      } catch (error) {
+        console.error('删除评论失败:', error)
+        ElMessage.error('删除失败')
+      }
+    }
+
+    // 格式化日期
+    const formatDate = (row: any, column: any, cellValue: string) => {
+      const date = new Date(cellValue)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
+
+    onMounted(() => {
+      fetchArticles()
+    })
+
+    return {
+      articles,
+      comments,
+      dialogVisible,
+      currentArticle,
+      showComments,
+      deleteComment,
+      formatDate
+    }
   }
-}
-
-// 格式化日期
-const formatDate = (row: any, column: any, cellValue: string) => {
-  const date = new Date(cellValue)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-onMounted(() => {
-  fetchArticles()
 })
 </script>
 

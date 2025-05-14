@@ -131,9 +131,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
-import api from '@/api'
-import Top from '@/components/top.vue'
-import Bottom from '@/components/bottom.vue'
+import api from '../../api'
+import Top from '../../components/top.vue'
+import Bottom from '../../components/bottom.vue'
 import { ElMessage } from 'element-plus'
 import { Star, StarFilled } from '@element-plus/icons-vue'
 
@@ -381,7 +381,7 @@ onMounted(() => {
 }
 
 .category-text {
-  color: #e91e63;
+  color: #111010;
   font-size: 0.9em;
 }
 

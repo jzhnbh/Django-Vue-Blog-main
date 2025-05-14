@@ -140,13 +140,14 @@
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
-import api from '@/api'
+import api from '../../api'
 import { useRouter } from 'vue-router'
 
 interface Article {
   id: number
   title: string
   category: number
+  category_id: number
   category_name: string
   created_at: string
   author_name: string
@@ -251,6 +252,14 @@ export default defineComponent({
           title: row.title,
           category_id: row.category
         })
+        
+        // 更新文章的category_id
+        const updatedArticle = articles.value.find(a => a.id === row.id)
+        if (updatedArticle) {
+          updatedArticle.category_id = row.category
+          updatedArticle.category = row.category
+        }
+        
         row.isEditing = false
         ElMessage.success('更新成功')
       } catch (error) {

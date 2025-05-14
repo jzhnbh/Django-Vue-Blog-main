@@ -66,10 +66,10 @@
           </div>
         </section>
 
-        <!-- 右侧手账部分 -->
+        <!-- 右侧笔记部分 -->
         <section class="notes-section">
           <h2 class="section-title" @click="router.push('/notes')">
-            手账 →
+            笔记 →
             <span class="section-subtitle">对于我还不完全理解的事情，做出松散且不带任何偏见的记录。</span>
           </h2>
           
@@ -170,10 +170,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import api from '@/api'
-import Top from '@/components/top.vue'
-import Bottom from '@/components/bottom.vue'
-import ArticleCard from '@/components/ArticleCard.vue'
+import api from '../../api'
+import { defineComponent } from 'vue'
+import Top from '../../components/top.vue'
+import Bottom from '../../components/bottom.vue'
 
 interface Article {
   id: number

@@ -35,13 +35,15 @@
       </el-aside>
      
       <el-main>
-        <component :is="currentComponent" />
+        <keep-alive>
+          <component :is="activeComponent" />
+        </keep-alive>
       </el-main>
     </el-container>
   </template>
   
   <script lang="ts">
-  import { defineComponent, ref, onMounted } from 'vue'
+  import { defineComponent, ref, onMounted, markRaw, shallowRef } from 'vue'
   import {
     Document,
     PriceTag,
@@ -49,43 +51,59 @@
     User,
     House
   } from '@element-plus/icons-vue'
-  import ArticleManage from './ArticleManage.vue'
-  import CategoryManage from './CategoryManage.vue'
-  import CommentManage from './CommentManage.vue'
-  import UserManage from './UserManage.vue'
   import { useRouter } from 'vue-router'
   import { ElMessage } from 'element-plus'
   import axios from 'axios'
   
+  // 直接导入Vue文件
+  import ArticleManageVue from './ArticleManage.vue'
+  import CategoryManageVue from './CategoryManage.vue'
+  import CommentManageVue from './CommentManage.vue'
+  import UserManageVue from './UserManage.vue'
+  
   export default defineComponent({
+    name: 'ManageHome',
     components: {
       Document,
       PriceTag,
       ChatDotRound,
       User,
-      ArticleManage,
-      CategoryManage,
-      CommentManage,
-      UserManage,
       House
     },
     setup() {
       const router = useRouter()
       const activeIndex = ref('1')
-      const currentComponent = ref('ArticleManage')
-  
+      
+      // 使用shallowRef和markRaw来提高性能
+      const activeComponent = shallowRef<any>(markRaw(ArticleManageVue))
+      
       const handleSelect = (index: string) => {
-        const components = ['ArticleManage', 'CategoryManage', 'CommentManage', 'UserManage']
-        currentComponent.value = components[Number(index) - 1]
+        switch(index) {
+          case '1':
+            activeComponent.value = markRaw(ArticleManageVue)
+            break
+          case '2':
+            activeComponent.value = markRaw(CategoryManageVue)
+            break
+          case '3':
+            activeComponent.value = markRaw(CommentManageVue)
+            break
+          case '4':
+            activeComponent.value = markRaw(UserManageVue)
+            break
+          case '/home':
+            // 首页按钮由goToHome处理
+            break
+        }
       }
   
       const goToHome = () => {
-  router.push('/')
+        router.push('/')
       }
 
       return {
         activeIndex,
-        currentComponent,
+        activeComponent,
         handleSelect,
         goToHome
       }

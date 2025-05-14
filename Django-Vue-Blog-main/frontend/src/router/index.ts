@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CategoryDetail from '@/views/CategoryDetail.vue'
+import axios from 'axios'
 
 // const ArticleDetail = () => import('@/views/ArticleDetail.vue')
 // const UserCenter = () => import('@/views/UserCenter.vue')
@@ -79,6 +80,11 @@ const routes = [
     component: () => import('@/views/Login.vue')
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue')
+  },
+  {
     path: '/tech/:id',
     name: 'TechDetail',
     component: () => import('../views/blog/article_detail.vue')
@@ -109,17 +115,54 @@ const router = createRouter({
   }
 })
 
-// router.beforeEach((to, from, next) => {
-//   if (to.path.startsWith('/manage')) {
-//     const token = localStorage.getItem('access.myblog')
-//     if (!token) {
-//       next('/login')
-//     } else {
-//       next()
-//     }
-//   } else {
-//     next()
-//   }
-// })
+// 检查用户是否是管理员
+const checkIsAdmin = async () => {
+  const token = localStorage.getItem('access_token')
+  const username = localStorage.getItem('username')
+  
+  if (!token || !username) return false
+  
+  try {
+    const response = await axios.get(`/api/user/${username}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    
+    return response.data?.is_superuser === true
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    return false
+  }
+}
+
+router.beforeEach(async (to, from, next) => {
+  // 管理页面路由
+  if (to.path.startsWith('/manage')) {
+    const token = localStorage.getItem('access_token')
+    
+    // 未登录，跳转到登录页
+    if (!token) {
+      next('/login')
+      return
+    }
+    
+    // 检查是否是管理员
+    const isAdmin = await checkIsAdmin()
+    
+    if (!isAdmin) {
+      // 不是管理员，跳转到首页
+      alert('只有管理员可以访问管理页面')
+      next('/')
+      return
+    }
+    
+    // 是管理员，允许访问
+    next()
+  } else {
+    // 非管理页面，正常访问
+    next()
+  }
+})
 
 export default router
