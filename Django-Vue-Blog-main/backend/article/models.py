@@ -67,6 +67,10 @@ class Article(models.Model):
     def __str__(self):
         return self.title
     
+    @property
+    def category_id(self):
+        return self.category.id if self.category else None
+    
     def get_md(self):
         md = Markdown(
             extensions=[

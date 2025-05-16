@@ -203,7 +203,11 @@ export default defineComponent({
       
       // 按分类筛选
       if (selectedCategory.value) {
-        result = result.filter(article => article.category === selectedCategory.value)
+        result = result.filter(article => {
+          // 同时检查 category 和 category_id 字段
+          return article.category === selectedCategory.value || 
+                 article.category_id === selectedCategory.value
+        })
       }
 
       // 按发布时间排序
@@ -216,7 +220,8 @@ export default defineComponent({
 
     // 方法
     const handleCategoryChange = () => {
-      // 分类选择变化时自动更新
+      console.log('当前选择的分类 ID:', selectedCategory.value)
+      // 选择分类后显示该分类的文章
     }
 
     const toggleSortOrder = () => {

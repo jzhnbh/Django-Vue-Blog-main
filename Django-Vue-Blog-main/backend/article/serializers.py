@@ -23,7 +23,7 @@ class CategorySerializer(serializers.ModelSerializer):
         
 class ArticleBaseSerializer(serializers.HyperlinkedModelSerializer):
     coverimage = serializers.ImageField(write_only=True, required=False, allow_null=True)  # 改名
-    category_id = serializers.IntegerField(write_only=True),
+    category_id = serializers.IntegerField(write_only=True)
     author = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
 
     class Meta:
@@ -55,6 +55,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    category_id = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Article
@@ -77,16 +78,43 @@ class ArticleSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         if 'coverimage_id' not in data and instance.coverimage:
             data['coverimage_id'] = instance.coverimage.id
+        
+        # 确保category_id被正确包含
+        if instance.category:
+            data['category_id'] = instance.category.id
+        else:
+            data['category_id'] = None
+            
         return data
 
     def create(self, validated_data):
         if 'coverimage' in validated_data:
             validated_data['coverimage'] = validated_data.pop('coverimage')
+        
+        # 处理category_id
+        category_id = validated_data.pop('category_id', None)
+        if category_id:
+            try:
+                category = Category.objects.get(id=category_id)
+                validated_data['category'] = category
+            except Category.DoesNotExist:
+                pass
+        
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         if 'coverimage' in validated_data:
             validated_data['coverimage'] = validated_data.pop('coverimage')
+        
+        # 处理category_id
+        category_id = validated_data.pop('category_id', None)
+        if category_id:
+            try:
+                category = Category.objects.get(id=category_id)
+                validated_data['category'] = category
+            except Category.DoesNotExist:
+                pass
+        
         return super().update(instance, validated_data)
 
 
@@ -135,6 +163,13 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         if 'coverimage_id' not in data and instance.coverimage:
             data['coverimage_id'] = instance.coverimage.id
+        
+        # 确保category_id被正确包含
+        if instance.category:
+            data['category_id'] = instance.category.id
+        else:
+            data['category_id'] = None
+            
         return data
 
 

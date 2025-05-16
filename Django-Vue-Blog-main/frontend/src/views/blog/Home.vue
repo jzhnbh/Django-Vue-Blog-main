@@ -69,7 +69,7 @@
         <!-- 右侧笔记部分 -->
         <section class="notes-section">
           <h2 class="section-title" @click="router.push('/notes')">
-            笔记 →
+            手账 →
             <span class="section-subtitle">对于我还不完全理解的事情，做出松散且不带任何偏见的记录。</span>
           </h2>
           
@@ -507,7 +507,7 @@ const goToDetail = (category: string, id: number) => {
 /* 调整标题样式 */
 .section-title {
   font-size: 1.8rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: baseline;
   gap: 1rem;

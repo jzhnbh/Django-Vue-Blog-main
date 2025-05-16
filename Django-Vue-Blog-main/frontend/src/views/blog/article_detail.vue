@@ -27,10 +27,10 @@
 
       <!-- 内容区域撑满屏幕 -->
       <div class="content-container">
-        <div class="content-wrapper">
+        <div class="content-wrapper" :class="{ 'has-toc': hasToc }">
           <!-- 左侧目录 -->
-          <div class="sidebar">
-            <div class="toc" v-if="hasToc">
+          <div class="sidebar" v-if="hasToc">
+            <div class="toc">
               <div class="toc-header">
                 <span class="toc-icon">≡</span>
                 <span class="toc-title">目录</span>
@@ -128,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import api from '../../api'
@@ -199,7 +199,7 @@ const isLoggedIn = ref(false) // 根据你的登录状态设置
 const previewUrl = ref('')
 
 const compiledMarkdown = computed(() => {
-  return marked(article.value.body)
+  return marked.parse(article.value.body)
 })
 
 const formatDate = (dateString: string): string => {
@@ -225,13 +225,85 @@ const getCategoryName = (categoryId: number): string => {
 }
 
 const scrollToHeading = (id: string) => {
-  const element = document.getElementById(id)
+  console.log('点击目录，尝试跳转到:', id);
+  
+  // 首先尝试通过ID直接查找
+  let element = document.getElementById(id);
+  
+  // 如果找不到，尝试遍历所有标题，寻找与目录项文本匹配的标题
+  if (!element) {
+    // 从目录数据中找到对应heading的text
+    const heading = article.value.toc.find(h => h.id === id);
+    if (heading) {
+      const headingText = heading.text;
+      console.log('尝试通过文本查找标题:', headingText);
+      
+      // 查找所有h1-h6标签
+      const contentEl = document.querySelector('.article-content');
+      if (contentEl) {
+        const headings = contentEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        
+        // 遍历找到文本内容匹配的标题
+        headings.forEach(h => {
+          if (h.textContent?.trim() === headingText.trim()) {
+            console.log('找到匹配标题:', h);
+            element = h as HTMLElement;
+          }
+        });
+      }
+    }
+  }
+  
   if (element) {
-    element.scrollIntoView({ behavior: 'smooth' })
-    currentHeading.value = id
+    // 找到元素，滚动到视图
+    console.log('找到标题元素，滚动到:', element);
+    element.scrollIntoView({ behavior: 'smooth' });
+    currentHeading.value = id;
+  } else {
+    console.error('找不到目标标题元素:', id);
   }
 }
 
+// 处理渲染后的标题，确保它们有ID
+const processHeadings = () => {
+  // 等待DOM更新完成
+  setTimeout(() => {
+    const contentEl = document.querySelector('.article-content');
+    if (!contentEl) return;
+    
+    // 找到所有标题元素
+    const headings = contentEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    
+    // 为每个标题添加ID和点击事件
+    headings.forEach((heading, index) => {
+      const text = heading.textContent || '';
+      // 生成ID (基于文本内容)
+      const id = `heading-${index}-${text.toLowerCase().replace(/\s+/g, '-')}`;
+      heading.setAttribute('id', id);
+      
+      // 添加点击事件
+      heading.addEventListener('click', () => {
+        currentHeading.value = id;
+        // 更新URL以反映当前位置（可选）
+        window.history.replaceState(null, '', `${window.location.pathname}#${id}`);
+      });
+      
+      // 添加鼠标悬停样式
+      heading.classList.add('hoverable-heading');
+      
+      // 同时更新目录中对应的ID
+      article.value.toc.forEach(item => {
+        if (item.text === text) {
+          item.id = id;
+        }
+      });
+    });
+    
+    console.log('标题处理完成，目录:', article.value.toc);
+  }, 100);
+};
+
+// 在文章数据获取成功后执行
 const fetchArticle = async () => {
   try {
     const response = await api.get(`/article/${route.params.id}/`)
@@ -248,6 +320,9 @@ const fetchArticle = async () => {
       fetchComments(),
       fetchLikeStatus()
     ])
+    
+    // 处理标题元素
+    processHeadings();
   } catch (error) {
     console.error('获取文章失败:', error)
     ElMessage.error('获取文章失败')
@@ -341,8 +416,71 @@ const fetchLikeStatus = async () => {
   }
 }
 
+// 监听compiledMarkdown的变化
+watch(compiledMarkdown, () => {
+  // 等待DOM更新完成后处理标题
+  setTimeout(processHeadings, 100);
+});
+
+// 更新当前选中的标题
+const updateCurrentHeading = () => {
+  // 获取所有标题元素
+  const headings = document.querySelectorAll('.article-content h1, .article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
+  
+  // 清除所有标题的高亮
+  headings.forEach(h => {
+    h.classList.remove('active');
+  });
+  
+  // 如果有当前选中的标题ID
+  if (currentHeading.value) {
+    const current = document.getElementById(currentHeading.value);
+    if (current) {
+      current.classList.add('active');
+    }
+  }
+};
+
+// 监听currentHeading的变化
+watch(currentHeading, updateCurrentHeading);
+
+// 在页面滚动时检测当前可见的标题
+const setupScrollSpy = () => {
+  let scrollTimeout: number | null = null;
+  
+  window.addEventListener('scroll', () => {
+    // 使用节流函数减少函数调用频率
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+    }
+    
+    scrollTimeout = window.setTimeout(() => {
+      const headings = document.querySelectorAll('.article-content h1, .article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6');
+      
+      if (headings.length === 0) return;
+      
+      // 找到最靠近顶部的标题
+      let closestHeading: HTMLElement | null = null;
+      let closestDistance = Infinity;
+      
+      headings.forEach((heading) => {
+        const distance = Math.abs((heading as HTMLElement).getBoundingClientRect().top - 100);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestHeading = heading as HTMLElement;
+        }
+      });
+      
+      if (closestHeading && 'id' in closestHeading) {
+        currentHeading.value = (closestHeading as { id: string }).id;
+      }
+    }, 100);
+  });
+};
+
 onMounted(() => {
-  fetchArticle()  // 只需要调用 fetchArticle
+  fetchArticle();  // 获取文章数据
+  setupScrollSpy(); // 设置滚动监听
 })
 </script>
 
@@ -366,10 +504,15 @@ onMounted(() => {
 
 .content-wrapper {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr) 250px;  /* 三列布局 */
+  grid-template-columns: 1fr 250px;  /* 默认两列布局：内容-右侧空白 */
   gap: 40px;
   max-width: 1600px;
   margin: 0 auto;
+}
+
+/* 有目录时的三列布局 */
+.content-wrapper.has-toc {
+  grid-template-columns: 250px 1fr 250px;  /* 三列布局：目录-内容-右侧空白 */
 }
 
 /* 分类标识样式 */
@@ -547,20 +690,50 @@ onMounted(() => {
   margin: 2em 0;
 }
 
+/* 添加可悬停标题样式 */
+.article-content :deep(.hoverable-heading) {
+  cursor: pointer;
+  position: relative;
+}
+
+.article-content :deep(.hoverable-heading):hover::before {
+  content: "#";
+  position: absolute;
+  left: -1em;
+  color: #1976d2;
+  opacity: 0.7;
+}
+
+/* 当前选中的标题样式 */
+.article-content :deep(h1.active),
+.article-content :deep(h2.active),
+.article-content :deep(h3.active),
+.article-content :deep(h4.active),
+.article-content :deep(h5.active),
+.article-content :deep(h6.active) {
+  color: #1976d2;
+}
+
 /* 响应式布局 */
 @media (max-width: 1400px) {
   .content-wrapper {
-    grid-template-columns: 250px 1fr;  /* 隐藏右侧边栏 */
+    grid-template-columns: 1fr;  /* 仅内容 */
   }
+  
+  .content-wrapper.has-toc {
+    grid-template-columns: 250px 1fr;  /* 目录-内容 */
+  }
+  
   .right-sidebar {
     display: none;
   }
 }
 
 @media (max-width: 1024px) {
-  .content-wrapper {
+  .content-wrapper, .content-wrapper.has-toc {
     grid-template-columns: 1fr;  /* 单列布局 */
   }
+  
   .sidebar {
     display: none;
   }

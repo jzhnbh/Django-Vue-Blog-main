@@ -33,6 +33,7 @@
           />
         </el-form-item>
         <el-form-item v-if="isPaperCategory" label="文章封面" required>
+          <div class="cover-upload-container">
           <div class="cover-container">
             <!-- 显示当前封面 -->
             <div v-if="previewUrl" class="current-cover">
@@ -70,6 +71,7 @@
           </div>
           <div v-if="isPaperCategory && !articleForm.coverimage" class="avatar-error">
             论文分类必须上传封面
+            </div>
           </div>
         </el-form-item>
       </el-form>
@@ -80,6 +82,7 @@
         :options="editorOptions"
         contentType="html"
         @update:content="handleContentUpdate"
+        ref="quillEditor"
       />
       
       <!-- 按钮组 -->
@@ -201,6 +204,10 @@ export default defineComponent({
 
     // 分类改变处理
     const handleCategoryChange = (value: number | null): void => {
+      console.log('分类改变:', value, typeof value)
+      // 确保存储为数字类型
+      articleForm.category_id = value ? Number(value) : null
+      
       if (value !== 1) {
         articleForm.coverimage = null // 如果分类不是论文，清空封面
       }
@@ -244,6 +251,9 @@ export default defineComponent({
 
     // 内容更新处理
     const handleContentUpdate = (content: string): void => {
+      // 同时更新editorContent和articleForm.body，确保预览显示正确
+      editorContent.value = content
+      articleForm.body = content
       headings.value = extractHeadings(content)
     }
 
@@ -257,9 +267,15 @@ export default defineComponent({
     }
 
     const fileInput = ref<HTMLInputElement | null>(null)
+    const quillEditor = ref<any>(null)
 
     const handleUploadClick = () => {
-      fileInput.value?.click()
+      console.log('Upload click triggered')
+      if (fileInput.value) {
+        fileInput.value.click()
+      } else {
+        console.error('文件输入元素不存在')
+      }
     }
 
     const handleFileChange = async (event: Event) => {
@@ -285,6 +301,23 @@ export default defineComponent({
       }
     }
 
+    // 通用重置表单方法
+    const resetForm = (): void => {
+      // 清空表单数据
+      articleForm.title = ''
+      articleForm.summary = ''
+      articleForm.category_id = null
+      articleForm.coverimage = null
+      editorContent.value = ''
+      headings.value = []
+      previewUrl.value = ''
+      
+      // 清空编辑器内容
+      if (quillEditor.value) {
+        quillEditor.value.getQuill().setText('')
+      }
+    }
+
     // 发布文章
     const publishArticle = async (): Promise<void> => {
       if (!articleForm.title || !articleForm.summary || !editorContent.value || !articleForm.category_id) {
@@ -297,15 +330,20 @@ export default defineComponent({
         return
       }
 
+      // 确保category_id是数字类型
+      const categoryId = Number(articleForm.category_id)
+
       const data = {
         title: articleForm.title,
         summary: articleForm.summary,
         body: editorContent.value,
-        category_id: articleForm.category_id,
+        category_id: categoryId,
         coverimage_id: articleForm.coverimage,
         toc: headings.value,
         published: true
       }
+
+      console.log('发送的文章数据:', data) // 添加日志便于调试
 
       const id = route.query.id
       try {
@@ -319,14 +357,8 @@ export default defineComponent({
           ElMessage.success('文章发布成功')
         }
 
-        // 清空表单
-        articleForm.title = ''
-        articleForm.summary = ''
-        articleForm.category_id = null
-        articleForm.coverimage = null
-        editorContent.value = ''
-        headings.value = []
-        previewUrl.value = ''
+        // 重置表单
+        resetForm()
         
       } catch (error) {
         console.error('操作失败:', error)
@@ -336,11 +368,14 @@ export default defineComponent({
 
     // 保存文章
     const saveArticle = async (): Promise<void> => {
+      // 确保category_id是数字类型
+      const categoryId = Number(articleForm.category_id)
+      
       const data = {
         title: articleForm.title,
         summary: articleForm.summary,
         body: editorContent.value,
-        category_id: articleForm.category_id,
+        category_id: categoryId,
         coverimage_id: articleForm.coverimage,
         toc: headings.value, // 添加目录字段
         punished: false,  // 保存时传递 punished: false
@@ -352,13 +387,8 @@ export default defineComponent({
 
         if (response.status === 200) {
           ElMessage.success('文章保存成功')
-          // 清空表单
-          articleForm.title = ''
-          articleForm.summary = ''
-          articleForm.category_id = null
-          articleForm.coverimage = null
-          editorContent.value = ''
-          headings.value = [] // 清空目录
+          // 重置表单
+          resetForm()
         }
       } catch (error) {
         ElMessage.error('文章保存失败')
@@ -380,7 +410,25 @@ export default defineComponent({
         articleForm.summary = article.summary
         articleForm.category_id = article.category_id
         articleForm.body = article.body
+        
+        // 确保编辑器内容被正确设置
         editorContent.value = article.body
+        
+        // 更新QuillEditor的内容
+        setTimeout(() => {
+          if (quillEditor.value) {
+            const quill = quillEditor.value.getQuill()
+            quill.root.innerHTML = article.body
+          }
+        }, 100)
+        
+        // 如果API返回了文章的目录数据，直接使用
+        if (article.toc && Array.isArray(article.toc)) {
+          headings.value = article.toc
+        } else {
+          // 否则重新提取标题生成目录
+          headings.value = extractHeadings(article.body)
+        }
         
         // 获取封面图片
         if (article.coverimage_id) {
@@ -439,7 +487,10 @@ export default defineComponent({
       isEditMode,
       fetchArticle,
       handleDeleteCover,
-      updateArticle
+      updateArticle,
+      fileInput,
+      quillEditor,
+      resetForm
     }
   }
 })
@@ -499,17 +550,18 @@ export default defineComponent({
   color: #606266;
   line-height: 1.6;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 .toc-item:hover {
   color: #409EFF;
-  padding-left: 5px;
 }
 
 .toc-item.active {
   color: #409EFF;
   font-weight: 500;
+  padding-left: 3px;
+  border-left: 2px solid #409EFF;
 }
 
 .level-1 {
@@ -637,10 +689,25 @@ export default defineComponent({
   margin-bottom: 8px;
 }
 
+.cover-upload-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.cover-container {
+  position: relative;
+  width: 150px;
+  margin-right: 25px;
+}
+
 .avatar-error {
   color: #f56c6c;
-  font-size: 12px;
-  margin-top: 5px;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-left: 15px;
+  flex: 1;
+  padding-top: 5px;
 }
 
 .summary-avatar-container {
@@ -656,18 +723,6 @@ export default defineComponent({
 .avatar-uploader {
   width: 120px;
   height: 120px;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.cover-container {
-  position: relative;
-  width: 150px;
 }
 
 .current-cover {
@@ -687,5 +742,12 @@ export default defineComponent({
 
 .current-cover:hover .delete-cover {
   opacity: 1;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
 }
 </style>

@@ -137,27 +137,58 @@ const submitForm = async () => {
     loading.value = true
     
     try {
-      await api.post('/user/', {
+      console.log('发送注册请求:', {
         username: registerData.username,
         email: registerData.email,
         password: registerData.password
       })
       
-      ElMessage.success('注册成功！请登录')
-      router.push('/login')
+      // 使用正确的请求数据格式 - 确保与Django用户创建兼容
+      const userData = {
+        username: registerData.username,
+        email: registerData.email,
+        password: registerData.password
+      }
+      
+      // 直接调用API端点
+      const response = await api.post('/user/', userData)
+      
+      console.log('注册成功响应:', response.data)
+      
+      ElMessage({
+        message: '注册成功！请登录',
+        type: 'success',
+        duration: 3000
+      })
+      
+      // 清除storage中的重定向标记
+      sessionStorage.removeItem('auth_redirected')
+      
+      // 注册成功后等待一下再跳转，避免页面闪烁
+      setTimeout(() => {
+        router.push('/login')
+      }, 1500)
     } catch (error: any) {
       console.error('注册失败:', error)
+      console.error('错误响应:', error.response?.data)
+      
       if (error.response?.data) {
         const errors = error.response.data
         if (errors.username) {
-          ElMessage.error(errors.username[0])
+          ElMessage.error(`用户名错误: ${errors.username[0]}`)
         } else if (errors.email) {
-          ElMessage.error(errors.email[0])
+          ElMessage.error(`邮箱错误: ${errors.email[0]}`)
+        } else if (errors.password) {
+          ElMessage.error(`密码错误: ${errors.password[0]}`)
+        } else if (errors.detail) {
+          ElMessage.error(`错误: ${errors.detail}`)
+        } else if (typeof errors === 'string') {
+          ElMessage.error(`错误: ${errors}`)
         } else {
-          ElMessage.error('注册失败，请稍后重试')
+          ElMessage.error('注册失败，请检查网络连接')
         }
       } else {
-        ElMessage.error('注册失败，请稍后重试')
+        ElMessage.error('注册失败，服务器无响应')
       }
     } finally {
       loading.value = false

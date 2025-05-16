@@ -98,12 +98,34 @@ class ArticleViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        # 确保处理category_id
+        category_id = self.request.data.get('category_id')
+        category = None
+        if category_id:
+            try:
+                category = Category.objects.get(id=category_id)
+            except Category.DoesNotExist:
+                pass
+                
         # 如果前端没有传递 author，则默认设置为 jzh
         if 'author' not in serializer.validated_data:
             user = User.objects.get(username='jzh')  # 假设用户名为 jzh
-            serializer.save(author=user)
+            serializer.save(author=user, category=category)
         else:
-            serializer.save()
+            serializer.save(category=category)
+            
+    def perform_update(self, serializer):
+        # 确保处理category_id
+        category_id = self.request.data.get('category_id')
+        category = None
+        if category_id:
+            try:
+                category = Category.objects.get(id=category_id)
+            except Category.DoesNotExist:
+                pass
+                
+        serializer.save(category=category)
+            
     def get_serializer_class(self):
         if self.action == 'list':
             return ArticleSerializer

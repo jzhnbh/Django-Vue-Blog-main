@@ -18,6 +18,8 @@
     "marked": "^15.0.6",
     "papercss": "^1.9.2",
     "vue": "^3.2.47",
+    "vue-advanced-cropper": "^2.8.9",
+    "vue-cropper": "^0.6.5",
     "vue-quill-editor": "^3.0.6",
     "vue-router": "^4.1.6",
     "vuex": "^4.0.2"

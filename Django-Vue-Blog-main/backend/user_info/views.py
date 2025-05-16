@@ -24,6 +24,14 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserDetailSerializer
     lookup_field = 'username'
 
+    def get_serializer_class(self):
+        """
+        根据不同的请求方法返回不同的序列化器
+        """
+        if self.action == 'create':  # POST请求，用于创建用户
+            return UserRegisterSerializer
+        return self.serializer_class  # 其他请求使用默认序列化器
+
     def get_permissions(self):
         if self.request.method == 'POST':
             self.permission_classes = [AllowAny]

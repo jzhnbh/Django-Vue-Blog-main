@@ -101,11 +101,21 @@ const handleLoginSuccess = (accessToken: string, refreshToken: string, username:
   localStorage.setItem('refresh_token', refreshToken)
   localStorage.setItem('username', username)
   
+  // 清除会话存储中的重定向标记
+  sessionStorage.removeItem('auth_redirected')
+  
   // 提示成功
   ElMessage.success('登录成功')
   
-  // 导航到首页
-  router.push('/')
+  // 检查是否有登录后需要重定向的页面
+  const redirectPath = sessionStorage.getItem('redirect_after_login')
+  if (redirectPath) {
+    sessionStorage.removeItem('redirect_after_login') // 清除重定向记录
+    router.push(redirectPath)
+  } else {
+    // 否则导航到首页
+    router.push('/')
+  }
 }
 
 // 前往注册页面
@@ -127,10 +137,25 @@ const submitForm = async (e?: Event) => {
     // 设置加载状态
     loading.value = true
     
-    // 发送登录请求
-    const response = await api.post('/token/', {
+    // 打印登录请求信息（开发调试用）
+    console.log('发送登录请求:', {
       username: loginData.username,
+      password: loginData.password?.length ? `长度为${loginData.password.length}` : '空密码' // 不打印实际密码
+    })
+    
+    // 确保登录请求格式正确
+    const loginFormData = {
+      username: loginData.username.trim(),  // 移除空格
       password: loginData.password
+    }
+    
+    // 发送登录请求
+    const response = await api.post('/token/', loginFormData)
+    
+    // 打印登录响应（开发调试用）
+    console.log('登录成功:', {
+      access: response.data.access ? '已获取token' : '未获取token',
+      refresh: response.data.refresh ? '已获取刷新token' : '未获取刷新token'
     })
     
     // 处理登录成功
@@ -139,16 +164,50 @@ const submitForm = async (e?: Event) => {
       response.data.refresh,
       loginData.username
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('登录失败:', error)
     
-    // 显示错误消息，但不清空表单和不导致页面闪烁
-    ElMessage({
-      message: '用户名或密码错误，请重试',
-      type: 'error',
-      duration: 4000,
-      showClose: true
-    })
+    // 打印详细错误信息
+    if (error.response) {
+      console.error('错误状态码:', error.response.status)
+      console.error('错误响应数据:', error.response.data)
+      
+      // 根据不同错误显示不同提示
+      if (error.response.data.detail) {
+        // 在用户界面显示Django返回的详细错误消息
+        ElMessage({
+          message: `登录失败: ${error.response.data.detail}`,
+          type: 'error',
+          duration: 5000,
+          showClose: true
+        })
+        
+        // 如果是用户不存在或密码错误，给出更具体的建议
+        if (error.response.data.detail.includes('有效用户')) {
+          ElMessage({
+            message: '此用户名可能不存在，请检查拼写或注册新账号',
+            type: 'warning',
+            duration: 5000,
+            showClose: true
+          })
+        }
+      } else {
+        ElMessage({
+          message: '用户名或密码错误，请重试',
+          type: 'error',
+          duration: 4000,
+          showClose: true
+        })
+      }
+    } else {
+      // 显示错误消息，但不清空表单和不导致页面闪烁
+      ElMessage({
+        message: '登录失败，请检查网络连接',
+        type: 'error',
+        duration: 4000,
+        showClose: true
+      })
+    }
   } finally {
     loading.value = false
   }
