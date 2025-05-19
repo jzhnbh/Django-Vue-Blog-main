@@ -39,9 +39,9 @@
   
     <script setup lang="ts">
     import { ref, onMounted } from 'vue'
-    import api from '@/api'
-    import Top from '@/components/top.vue'
-    import Bottom from '@/components/bottom.vue'
+    import api from '../../api'
+    import Top from '../../components/top.vue'
+    import Bottom from '../../components/bottom.vue'
     import { useRouter } from 'vue-router'
 
     interface Article {

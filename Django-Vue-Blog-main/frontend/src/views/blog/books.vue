@@ -1,11 +1,11 @@
 <template>
-    <div class="essays">
+    <div class="books">
       <Top />
   
       <!-- Header Section -->
-      <div class="max-w-7xl">
-        <h1 class="tex">图书馆</h1>
-        <p class="text-xl text-gray-600">我读过的书对我看待世界的方式产生了很大的影响。</p>
+      <div class="header-section">
+        <h1 class="title">图书馆</h1>
+        <p class="subtitle">我读过的书对我看待世界的方式产生了很大的影响。</p>
       </div>
   
       <!-- Article Grid Container -->
@@ -96,12 +96,32 @@ import Bottom from '@/components/bottom.vue'
   /* 样式部分保持不变 */
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500&display=swap');
   
-  .essays {
+  .books {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
+  
+  .header-section {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .title {
+    font-size: 2.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-family: 'Noto Serif SC', serif;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+    color: #666;
+    line-height: 1.6;
+  }
+  
   .book-gallery {
     max-width: 1400px;
     margin: 0 auto;

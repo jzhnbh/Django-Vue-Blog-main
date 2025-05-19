@@ -5,7 +5,7 @@
 
     <!-- 主要内容 -->
     <main class="main-content">
-      <h1 class="title">蒋贞宏撰写了有关编程、艺术和社会学的文章。</h1>
+      <h1 class="title">蒋贞宏撰写了有关编程、艺术和历史学的文章。</h1>
       
       <div class="subtitle">
         <p>前端开发者，历史，艺术爱好者</p>
@@ -22,18 +22,6 @@
           </a>
         </p>
       </div>
-
-      <!-- 花园部分 -->
-      <section class="garden-section">
-        <h2 class="section-title" @click="router.push('/garden')">
-          花园 →
-          <span class="section-subtitle">数字花园是随着时间的推移慢慢生长的不完美的笔记。</span>
-        </h2>
-        <p class="garden-desc">
-          数字花园是随着时间的推移慢慢生长的不完美的笔记、文章和想法的集合。
-          <router-link to="/garden" class="learn-more">了解更多 →</router-link>
-        </p>
-      </section>
 
       <!-- 修改文章区域为左右布局 -->
       <div class="content-sections">
@@ -130,32 +118,36 @@
 
         <!-- 图书馆部分 -->
         <section class="library-section">
-          <h2 class="section-title" @click="loadCategoryArticles(4)">
+          <h2 class="section-title" @click="router.push('/books')">
             图书馆 →
             <span class="section-subtitle">我读过的书和我喜欢读过的书。</span>
           </h2>
           
           <div class="books-grid">
-            <div class="book-card">
-              <img src="@/assets/empire-of-pain.jpg" alt="白鹿原" />
-              <h3>白鹿原</h3>
-              <p>陈忠实</p>
-            </div>
-            <div class="book-card">
-              <img src="@/assets/empire-of-pain.jpg" alt="平凡的世界" />
-              <h3>平凡的世界</h3>
-              <p>路遥</p>
-            </div>
-            <div class="book-card">
-              <img src="@/assets/empire-of-pain.jpg" alt="资治通鉴" />
-              <h3>资治通鉴</h3>
-              <p>司马光</p>
-            </div>
-
-            <div class="book-card">
-              <img src="@/assets/empire-of-pain.jpg" alt="百年孤独" />
-              <h3>百年孤独</h3>
-              <p>加西亚·马尔克斯</p>
+            <div v-for="book in bookList" 
+              :key="book.id" 
+              class="book-card">
+              <div class="book-cover">
+                <img :src="book.coverUrl" :alt="book.title" />
+                <div class="book-overlay">
+                  <a 
+                    :href="book.googleLink"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="google-link"
+                  >
+                    <span>在 Google 上查看</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M7 17L17 7"/>
+                      <path d="M7 7h10v10"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+              <div class="book-info">
+                <h3>{{ book.title }}</h3>
+                <p>{{ book.author }}</p>
+              </div>
             </div>
           </div>
         </section>
@@ -174,6 +166,11 @@ import api from '../../api'
 import { defineComponent } from 'vue'
 import Top from '../../components/top.vue'
 import Bottom from '../../components/bottom.vue'
+
+const bookCover = '/src/assets/empire-of-pain.jpg'
+const bailuyuanCover = '/src/assets/bailuyuan.png'
+const zizhitongjianCover = '/src/assets/zizhi.png'
+const bainianguduCover = '/src/assets/bainiangudu.png'
 
 interface Article {
   id: number
@@ -194,6 +191,13 @@ const router = useRouter()
 const hover = ref(false)
 
 const articles = ref<Article[]>([])
+
+const bookList = [
+  { id: 1, title: '白鹿原', author: '陈忠实', coverUrl: bailuyuanCover, googleLink: '#' },
+  { id: 2, title: '平凡的世界', author: '路遥', coverUrl: bookCover, googleLink: '#' },
+  { id: 3, title: '资治通鉴', author: '司马光', coverUrl: zizhitongjianCover, googleLink: '#' },
+  { id: 4, title: '百年孤独', author: '加西亚·马尔克斯', coverUrl: bainianguduCover, googleLink: '#' }
+]
 
 // 按分类过滤文章
 const paperArticles = computed(() => 
@@ -336,34 +340,7 @@ const goToDetail = (category: string, id: number) => {
   color: #00a0e9;
 }
 
-.garden-section {
-  margin-top: 4rem;
-}
 
-.garden-section h2 {
-  font-size: 2rem;
-  font-weight: normal;
-  margin-bottom: 1rem;
-  color: #14181b;
-  opacity: 1;
-}
-
-.garden-desc {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #14181b;
-  opacity: 1;
-}
-
-.learn-more {
-  color: #00a0e9;
-  text-decoration: none;
-  margin-left: 0.5rem;
-}
-
-.learn-more:hover {
-  text-decoration: underline;
-}
 
 .content-sections {
   margin-top: 6rem;
@@ -643,22 +620,86 @@ h1, h2, h3 {
   gap: 1rem;
 }
 
-.book-card img {
+.book-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.book-cover img {
   width: 100%;
-  aspect-ratio: 2/3;
+  aspect-ratio: 3/4;
   object-fit: cover;
-  border-radius: 4px;
+  display: block;
+  transition: all 0.3s ease;
 }
 
-.book-card h3 {
+.book-cover:hover img {
+  transform: scale(1.05);
+  filter: blur(3px);
+}
+
+.book-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.book-cover:hover .book-overlay {
+  opacity: 1;
+}
+
+.google-link {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-size: 0.875rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.book-cover:hover .google-link {
+  opacity: 1;
+}
+
+.google-link:hover {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.book-info {
+  margin-top: 0.5rem;
+}
+
+.book-info h3 {
+  font-family: 'Noto Serif SC', serif;
   font-size: 1rem;
-  color: #14181b;
-  margin: 0.5rem 0;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+  color: #2c3e50;
 }
 
-.book-card p {
-  font-size: 0.9rem;
-  color: #14181b;
+.book-info p {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0;
 }
 
 /* 响应式调整 */

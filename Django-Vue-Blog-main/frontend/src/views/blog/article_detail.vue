@@ -7,7 +7,7 @@
       <div class="header-container">
         <div class="category-indicator">
           <span class="category-text">{{ getCategoryName(article.category_id) }}</span>
-          <span class="download-icon">↓</span>
+          <el-icon class="download-icon"><ArrowDown /></el-icon>
         </div>
         <div class="article-header">
           <h1>{{ article.title }}</h1>
@@ -135,7 +135,7 @@ import api from '../../api'
 import Top from '../../components/top.vue'
 import Bottom from '../../components/bottom.vue'
 import { ElMessage } from 'element-plus'
-import { Star, StarFilled } from '@element-plus/icons-vue'
+import { Star, StarFilled, ArrowDown } from '@element-plus/icons-vue'
 
 interface Article {
   id: number
@@ -400,8 +400,7 @@ const handleLike = async () => {
     }
     isLiked.value = !isLiked.value
   } catch (error) {
-    console.error('操作失败:', error)
-    ElMessage.error('操作失败')
+    ElMessage.error("请先登录")
   }
 }
 
@@ -531,6 +530,12 @@ onMounted(() => {
 .download-icon {
   color: #1976d2;
   cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.download-icon:hover {
+  transform: translateY(2px);
 }
 
 /* 文章头部样式 */

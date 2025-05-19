@@ -80,7 +80,17 @@ class ArticleViewSet(viewsets.ModelViewSet):
     """
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        获取文章列表和详情允许匿名访问
+        创建、编辑和删除需要管理员权限
+        """
+        if self.action in ['list', 'retrieve']:
+            permission_classes = []  # 允许匿名访问
+        else:
+            permission_classes = [IsAuthenticated]  # 需要登录
+        return [permission() for permission in permission_classes]
 
     filter_backends = [rest_filters.SearchFilter, django_filters.DjangoFilterBackend]
     filterset_class = ArticleFilter
@@ -145,7 +155,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
 class ArticleMetaUpdateView(generics.UpdateAPIView):
     queryset = Article.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # 保持需要登录权限
     
     def update(self, request, *args, **kwargs):
         article = self.get_object()
@@ -170,8 +180,13 @@ class ArticleMetaUpdateView(generics.UpdateAPIView):
         return Response({"message": "Updated successfully"})
 
 @api_view(['GET'])
+# 管理员才能访问统计信息
 @permission_classes([IsAuthenticated])
 def article_stats(request):
+    # 检查是否是管理员
+    if not request.user.is_superuser:
+        return Response({'error': '只有管理员可以访问此功能'}, status=403)
+            
     try:
         articles = Article.objects.annotate(
             likes_count=Count('articlelike'),
@@ -185,7 +200,7 @@ def article_stats(request):
             'views_count',
             'comments_count'
         ).order_by('-created_at')
-        
+                
         return Response(list(articles))
     except Exception as e:
         return Response(
@@ -194,7 +209,7 @@ def article_stats(request):
         )
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+# 允许匿名查看评论
 def article_comments(request, pk):
     try:
         article = Article.objects.get(pk=pk)
@@ -205,22 +220,30 @@ def article_comments(request, pk):
         return Response({'error': '文章不存在'}, status=404)
 
 @api_view(['GET', 'POST', 'DELETE'])
-@permission_classes([IsAuthenticated])
 def article_like(request, pk):
     try:
         article = Article.objects.get(pk=pk)
-        
+               
         if request.method == 'GET':
-            is_liked = ArticleLike.objects.filter(
-                article=article,
-                user=request.user
-            ).exists()
+            # 获取点赞数量不需要登录
             like_count = ArticleLike.objects.filter(article=article).count()
+                       
+            # 检查用户是否已点赞（需要登录）
+            is_liked = False
+            if request.user.is_authenticated:
+                is_liked = ArticleLike.objects.filter(
+                    article=article,
+                    user=request.user
+                ).exists()
+                           
             return Response({
                 'is_liked': is_liked,
                 'like_count': like_count
             })
-            
+                   
+        elif not request.user.is_authenticated:
+            return Response({'error': '请先登录'}, status=401)
+                   
         elif request.method == 'POST':
             # 添加点赞
             ArticleLike.objects.get_or_create(
@@ -228,7 +251,7 @@ def article_like(request, pk):
                 user=request.user
             )
             return Response({'status': 'liked'})
-            
+                   
         elif request.method == 'DELETE':
             # 取消点赞
             ArticleLike.objects.filter(
@@ -236,6 +259,6 @@ def article_like(request, pk):
                 user=request.user
             ).delete()
             return Response({'status': 'unliked'})
-            
+               
     except Article.DoesNotExist:
         return Response({'error': '文章不存在'}, status=404)
