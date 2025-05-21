@@ -193,10 +193,34 @@ const hover = ref(false)
 const articles = ref<Article[]>([])
 
 const bookList = [
-  { id: 1, title: '白鹿原', author: '陈忠实', coverUrl: bailuyuanCover, googleLink: '#' },
-  { id: 2, title: '平凡的世界', author: '路遥', coverUrl: bookCover, googleLink: '#' },
-  { id: 3, title: '资治通鉴', author: '司马光', coverUrl: zizhitongjianCover, googleLink: '#' },
-  { id: 4, title: '百年孤独', author: '加西亚·马尔克斯', coverUrl: bainianguduCover, googleLink: '#' }
+  { 
+    id: 1, 
+    title: '白鹿原', 
+    author: '陈忠实', 
+    coverUrl: bailuyuanCover, 
+    googleLink: 'https://www.google.com/search?q=白鹿原+陈忠实'
+  },
+  { 
+    id: 2, 
+    title: '平凡的世界', 
+    author: '路遥', 
+    coverUrl: bookCover, 
+    googleLink: 'https://www.google.com/search?q=平凡的世界+路遥'
+  },
+  { 
+    id: 3, 
+    title: '资治通鉴', 
+    author: '司马光', 
+    coverUrl: zizhitongjianCover, 
+    googleLink: 'https://www.google.com/search?q=资治通鉴+司马光'
+  },
+  { 
+    id: 4, 
+    title: '百年孤独', 
+    author: '加西亚·马尔克斯', 
+    coverUrl: bainianguduCover, 
+    googleLink: 'https://www.google.com/search?q=百年孤独+加西亚·马尔克斯'
+  }
 ]
 
 // 按分类过滤文章

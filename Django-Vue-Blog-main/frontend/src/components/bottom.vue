@@ -21,8 +21,8 @@
       
       <div class="site-links">
         <div class="links-column">
-          <router-link to="/garden">花园</router-link>
-          <router-link to="/now">技术</router-link>
+          <router-link to="/tech">技术</router-link>
+          <router-link to="/books">图书</router-link>
         </div>
         <div class="links-column">
           <router-link to="/essays">论文</router-link>

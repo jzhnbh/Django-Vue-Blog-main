@@ -48,8 +48,13 @@
   <script>
 import Top from '@/components/top.vue'
 import Bottom from '@/components/bottom.vue'
+
+const bookCover = '/src/assets/empire-of-pain.jpg'
+const bailuyuanCover = '/src/assets/bailuyuan.png'
+const zizhitongjianCover = '/src/assets/zizhi.png'
+const bainianguduCover = '/src/assets/bainiangudu.png'
   
-  export default {
+export default {
   name: 'BookGallery',
   components: {
     Top,
@@ -58,33 +63,33 @@ import Bottom from '@/components/bottom.vue'
   data() {
     return {
       books: [
-        {
-          id: 1,
-          title: '痛苦帝国:萨克勒王朝秘史',
-          author: '帕特里克·拉登·基夫',
-          coverUrl: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-9ipCeEQcI6EV8nOyhaYFzqVPNg7AZt.png',
-          googleLink: '#'
+        { 
+          id: 1, 
+          title: '白鹿原', 
+          author: '陈忠实', 
+          coverUrl: bailuyuanCover, 
+          googleLink: 'https://www.google.com/search?q=白鹿原+陈忠实'
         },
-        {
-          id: 2,
-          title: '看见声音:走进聋人的世界',
-          author: '奥利弗·萨克斯',
-          coverUrl: '/placeholder.svg?height=400&width=300',
-          googleLink: '#'
+        { 
+          id: 2, 
+          title: '平凡的世界', 
+          author: '路遥', 
+          coverUrl: bookCover, 
+          googleLink: 'https://www.google.com/search?q=平凡的世界+路遥'
         },
-        {
-          id: 3,
-          title: '夏娃：女性身体如何推动人类两亿年的进化',
-          author: '卡特·博汉农',
-          coverUrl: '/placeholder.svg?height=400&width=300',
-          googleLink: '#'
+        { 
+          id: 3, 
+          title: '资治通鉴', 
+          author: '司马光', 
+          coverUrl: zizhitongjianCover, 
+          googleLink: 'https://www.google.com/search?q=资治通鉴+司马光'
         },
-        {
-          id: 4,
-          title: '前世年鉴',
-          author: '约翰·麦克菲',
-          coverUrl: '/placeholder.svg?height=400&width=300',
-          googleLink: '#'
+        { 
+          id: 4, 
+          title: '百年孤独', 
+          author: '加西亚·马尔克斯', 
+          coverUrl: bainianguduCover, 
+          googleLink: 'https://www.google.com/search?q=百年孤独+加西亚·马尔克斯'
         }
       ]
     }

@@ -6,7 +6,6 @@
       <span class="m-right">▶</span>
     </div>
     <div class="nav-links">
-      <router-link to="/garden">花园</router-link>
       <router-link to="/now">现在</router-link>
       <router-link to="/about">关于</router-link>
       <router-link v-if="isAdmin" to="/manage">管理</router-link>
